@@ -1,0 +1,70 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Chickpea - Stage & Disease Predictor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Chickpea - Stage & Disease Predictor</h1>
+
+    <div class="card">
+      <h2>Predict Stage & Possible Diseases (by dates)</h2>
+      <label>Sowing Date (DD-MM-YYYY)</label>
+      <input id="sow" placeholder="15-10-2025" />
+      <label>Current Date (YYYY-MM-DD) (optional)</label>
+      <input id="cur" placeholder="2025-11-18" />
+      <button onclick="predictStage()">Predict Stage</button>
+      <pre id="stageResult"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Predict Disease (provide features)</h2>
+      <p>Either paste JSON for model features or enter sowing date + sensor values below.</p>
+      <textarea id="features" placeholder='{"temperature":28, "humidity":65}'></textarea>
+      <label>Sowing Date (optional)</label>
+      <input id="sow2" placeholder="15-10-2025" />
+      <label>Current Date (optional)</label>
+      <input id="cur2" placeholder="2025-11-18" />
+      <button onclick="predictDisease()">Predict Disease</button>
+      <pre id="diseaseResult"></pre>
+    </div>
+
+    <div class="card small">
+      <p>After training the model (run <code>python model_train.py</code>), predictions will use the trained model.</p>
+    </div>
+  </div>
+
+<script>
+async function predictStage(){
+  const sow = document.getElementById('sow').value;
+  const cur = document.getElementById('cur').value;
+  const res = await fetch('/predict_stage_disease', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({sowing_date: sow, current_date: cur})
+  });
+  const j = await res.json();
+  document.getElementById('stageResult').innerText = JSON.stringify(j, null, 2);
+}
+
+async function predictDisease(){
+  let featuresText = document.getElementById('features').value.trim();
+  let features = null;
+  try{ if (featuresText) features = JSON.parse(featuresText); }catch(e){ alert('Features must be valid JSON'); return; }
+  const sow = document.getElementById('sow2').value;
+  const cur = document.getElementById('cur2').value;
+  let body = {};
+  if (features) body.features = features;
+  if (sow) body.sowing_date = sow;
+  if (cur) body.current_date = cur;
+  const res = await fetch('/predict_disease', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  const j = await res.json();
+  document.getElementById('diseaseResult').innerText = JSON.stringify(j, null, 2);
+}
+</script>
+</body>
+</html>
